@@ -1,4 +1,6 @@
-# Armbian extensions
+# Customize Armbian image using extensions
+
+## Armbian extensions
 
 The extensions framework allows developers to enhance the Armbian build system by adding specific features without modifying the core system.
 
@@ -8,7 +10,7 @@ To enable extension pass parameter `ENABLE_EXTENSIONS=<comma separated list of e
 
 Extension could be placed inside a separate folder inside `userpatches/extensions`. This is useful to split and organize extensions. Folder name does not matter, only the extension file name matters - `ENABLE_EXTENSIONS=` will be looking for the given filename inside `userpatches/extensions`  
 
-# Hook functions
+## Hook functions
 
 The key concept of extension scripting is **extension_methods** - functions that follow a special naming pattern: `hook_name__extension_method_name`.
 `hook_name` - one of the names described on [Hooks](https://docs.armbian.com/Developer-Guide_Extensions-Hooks/) page. It defines at what stage of the build process extension function will be executed. E.g. if some actions should be performed when the image is ready and about to be unmounted `pre_umount_final_image` hook should be used.
@@ -17,7 +19,7 @@ After `hook_name` should be two underscores. This is important as function name 
 
 And the last part - `extension_method_name`. Some descriptive name that explain what your method is doing.
 
-# Ordering
+## Ordering
 
 After extension methods are parsed, each method whose name is not started with `xxx_` (`x` means any digit) will receive `500_` prefix. This allows to define the order of execution. 
 
@@ -56,7 +58,7 @@ function post_customize_image__100_extension_3_method()
 ```
 and in this case order of execution will be 3, 1, 2
 
-# Install TFT drivers with extensions
+## Install TFT drivers with extensions
 
 Practical example of how extensions could be used: Waveshare produces [3.5" TFT's](https://www.waveshare.com/wiki/3.5inch_RPi_LCD_(A)) for RaspberryPi. They work with fbtft driver already present in the kernel, but require some configuration. 
 
@@ -67,7 +69,7 @@ The following steps are required to make them work:
 
 So let's do it.
 
-## Prepare build environment
+### Prepare build environment
 
 Clone armbian project `git clone --depth=1 --branch=main https://github.com/armbian/build`
 
@@ -77,7 +79,7 @@ cd build
 ./compile.sh BOARD=rpi4b BRANCH=current RELEASE=bookworm BUILD_MINIMAL=yes BUILD_DESKTOP=no KERNEL_CONFIGURE=prebuilt 
 ```
 
-## Create extension
+### Create extension
 
 Inside the build dir create `userpatches/extensions` folder
 ``` Bash
@@ -90,7 +92,7 @@ touch userpatches/extensions/install-waveshare-35-tft/install-waveshare-35-tft.s
 mkdir -p userpatches/extensions/install-waveshare-35-tft/overlays
 ```
 
-### Overlay files
+#### Overlay files
 
 Before continuing overlay files must be downloaded from Waveshare [repository](https://github.com/waveshare/LCD-show)
 
@@ -102,13 +104,13 @@ Go outside armbian build directory, clone it, and copy the required files to the
 cd ..
 git clone https://github.com/waveshare/LCD-show.git
 cd LCD-show/
-cp LCD-show/waveshare35a-overlay.dtb build/userpatches/extensions/install-waveshare-35-tft/overlays/waveshare35a-overlay.dtbo
-cp LCD-show/waveshare35b-overlay.dtb build/userpatches/extensions/install-waveshare-35-tft/overlays/waveshare35b-overlay.dtbo
-cp LCD-show/waveshare35b-v2-overlay.dtb build/userpatches/extensions/install-waveshare-35-tft/overlays/waveshare35b-v2-overlay.dtbo
+cp LCD-show/waveshare35a-overlay.dtb build/userpatches/extensions/install-waveshare-35-tft/overlays/waveshare35a.dtbo
+cp LCD-show/waveshare35b-overlay.dtb build/userpatches/extensions/install-waveshare-35-tft/overlays/waveshare35b.dtbo
+cp LCD-show/waveshare35b-v2-overlay.dtb build/userpatches/extensions/install-waveshare-35-tft/overlays/waveshare35b-v2.dtbo
 
 ```
 
-### Install overlays from the extension and update the config file
+#### Install overlays from the extension and update the config file
 
 Now let's add some code, go back to Armbian build directory, and open `userpatches/extensions/install-waveshare-35-tft/install-waveshare-35-tft.sh` with a text editor.
 
@@ -128,7 +130,7 @@ function pre_umount_final_image__550_update_config() {
     printf "\n# ${BASH_SOURCE[0]}" >>"${FILENAME}"
     printf "\n# TFT display config" >>"${FILENAME}"
     printf "\ndtparam=spi=on" >>"${FILENAME}"
-    printf "\ndtoverlay=waveshare35a-overlay,speed=20000000,rotate=270\n" >>"${FILENAME}"
+    printf "\ndtoverlay=waveshare35a,speed=20000000,rotate=270\n" >>"${FILENAME}"
     printf "\nignore_lcd=0" >>"${FILENAME}" >>"${FILENAME}"
 
 }
@@ -142,11 +144,11 @@ Now time to build image with this extension enabled:
 ./compile.sh BOARD=rpi4b BRANCH=current RELEASE=bookworm BUILD_MINIMAL=yes BUILD_DESKTOP=no KERNEL_CONFIGURE=prebuilt ENABLE_EXTENSIONS=install-waveshare-35-tft
 ```
 
-## Extension parameters
+### Extension parameters
 
 The function `pre_umount_final_image__550_update_config` configures the target image to use Waveshare 3.5 TFT display version "A". But we have also overlays for version "B" and "B-v2".
 
-We can change the line `printf "\ndtoverlay=waveshare35a-overlay,speed=20000000,rotate=270\n" >>"${FILENAME}"` to use another overlay, but also it is possible to use variables to change this parameter (or any other).
+We can change the line `printf "\ndtoverlay=waveshare35a,speed=20000000,rotate=270\n" >>"${FILENAME}"` to use another overlay, but also it is possible to use variables to change this parameter (or any other).
 
 First `pre_umount_final_image__550_update_config` needs to be modified:
 
@@ -156,7 +158,7 @@ First `pre_umount_final_image__550_update_config` needs to be modified:
 #   EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY - name of the overlay to be used in config.txt
 function pre_umount_final_image__550_update_config() {
     if [[ -z "${EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY}" ]]; then
-        EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY="waveshare35a-overlay"
+        EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY="waveshare35a"
     fi
     
     display_alert "Update config for Waveshare 3.5 TFT, overlay ${EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY}" "info"
@@ -169,8 +171,12 @@ function pre_umount_final_image__550_update_config() {
 
 }
 ```
-Variable `EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY` was added. By default it is set to "waveshare35a-overlay" but now it is possible to overwrite it with commandline parameters. E.g. if "B" version is required, compilation should be started like this:
+Variable `EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY` was added. By default it is set to "waveshare35a" but now it is possible to overwrite it with commandline parameters. E.g. if "B" version is required, compilation should be started like this:
 
 ``` Bash
-./compile.sh BOARD=rpi4b BRANCH=current RELEASE=bookworm BUILD_MINIMAL=yes BUILD_DESKTOP=no KERNEL_CONFIGURE=prebuilt ENABLE_EXTENSIONS=install-waveshare-35-tft EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY="waveshare35b-v2-overlay"
+./compile.sh BOARD=rpi4b BRANCH=current RELEASE=bookworm BUILD_MINIMAL=yes BUILD_DESKTOP=no KERNEL_CONFIGURE=prebuilt ENABLE_EXTENSIONS=install-waveshare-35-tft EXT_INSTALL_WAVESHARE_35_TFT_OVERLAY="waveshare35b-v2"
 ```
+
+## Links
+
+Code from this article is placed on [GitHub](https://github.com/pavlot-scriptec/scriptec-armbian-ext-waveshare-35tft)
