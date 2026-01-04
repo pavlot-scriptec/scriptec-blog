@@ -1,0 +1,76 @@
+# appimage-builder recipe see https://appimage-builder.readthedocs.io for details
+version: 1
+script:
+  # Remove any previous build
+  - rm -rf AppDir | true
+  - rm -rf appimage-build | true
+  # Install application dependencies. 
+  - python3 -m pip install --ignore-installed --prefix=/usr --root=AppDir ../gtk-serpent/dist/gtk_serpent-0.1.0-py3-none-any.whl
+AppDir:
+  path: 
+    AppDir
+  app_info:
+    id: com.example.gtk-serpent
+    name: gtk-serpent
+    icon: utilities-terminal
+    version: 0.1.0
+    exec: usr/bin/python3
+    exec_args: $APPDIR/usr/bin/gtk-serpent $@
+  apt:
+    arch: amd64
+    sources:
+      - sourceline: 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse'
+        key_url: 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C'
+    include: 
+      - python3
+      - gir1.2-gtk-4.0 
+      - libgirepository-2.0-dev 
+      - libcairo2-dev
+      - pkg-config
+      - python3-dev
+      - gir1.2-gtk-4.0
+      - libgtk-4-1
+      - libwayland-client0
+      - libglapi-mesa
+
+  files:
+    include: []
+    exclude:
+    - usr/share/man
+    - usr/share/doc/*/README.*
+    - usr/share/doc/*/changelog.*
+    - usr/share/doc/*/NEWS.*
+    - usr/share/doc/*/TODO.*
+
+  runtime:
+    env:
+      PYTHONHOME: '${APPDIR}/usr'
+      PYTHONPATH: '${APPDIR}/usr/lib/python3.12/site-packages'
+
+  after_runtime:
+    - cd "$TARGET_APPDIR/runtime/compat" && ln -s usr/lib64 . 
+
+  test:
+    fedora-30:
+      image: appimagecrafters/tests-env:fedora-30
+      command: ./AppRun
+      use_host_x: true
+    debian-stable:
+      image: appimagecrafters/tests-env:debian-stable
+      command: ./AppRun
+      use_host_x: true
+    archlinux-latest:
+      image: appimagecrafters/tests-env:archlinux-latest
+      command: ./AppRun
+      use_host_x: true
+    centos-7:
+      image: appimagecrafters/tests-env:centos-7
+      command: ./AppRun
+      use_host_x: true
+    ubuntu-xenial:
+      image: appimagecrafters/tests-env:ubuntu-xenial
+      command: ./AppRun
+      use_host_x: true
+AppImage:
+  arch: x86_64
+  update-information: None

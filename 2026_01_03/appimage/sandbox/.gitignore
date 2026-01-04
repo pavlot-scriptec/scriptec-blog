@@ -1,0 +1,7 @@
+venv
+dist
+__pycache__
+*.AppImage
+*.AppImage.zsync
+appimage/AppDir
+appimage/appimage-build

@@ -1,0 +1,22 @@
+[project]
+name = "gtk-serpent"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Pavlo Taranov",email = "taranov.pavel@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pygobject (>=3.54,<4.0)"
+]
+
+[tool.poetry]
+packages = [{include = "gtk_serpent", from = "src"}]
+
+[tool.poetry.scripts]
+gtk-serpent = "gtk_serpent.application:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
